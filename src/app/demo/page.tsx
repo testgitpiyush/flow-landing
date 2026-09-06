@@ -1,7 +1,14 @@
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 import { DashboardMockup } from "@/components/DashboardMockup";
 import { CTA } from "@/components/CTA";
 
-export default function DemoPage() {
+export default async function DemoPage() {
+  const session = await auth();
+  if (!session) {
+    redirect("/login");
+  }
+
   return (
     <div className="pt-32 pb-20">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center mb-12">

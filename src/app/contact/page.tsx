@@ -11,22 +11,35 @@ export default function ContactPage() {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (loading || submitted) return; // Prevent rapid clicks
+    if (loading || submitted) return;
     if (name.trim().length < 2 || message.trim().length < 10) return;
+
     setLoading(true);
-    setTimeout(() => {
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, message }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to submit");
+      }
+
       setLoading(false);
       setSubmitted(true);
-      // Keep message visible, but allow user to submit another inquiry
       setTimeout(() => {
         setSubmitted(false);
         setName("");
         setEmail("");
         setMessage("");
       }, 5000);
-    }, 800);
+    } catch (error) {
+      console.error("Error submitting contact form:", error);
+      setLoading(false);
+    }
   };
 
   return (

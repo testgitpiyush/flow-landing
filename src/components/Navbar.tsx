@@ -3,10 +3,12 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Layers, Menu, X, ArrowRight } from "lucide-react";
+import { useSession, signOut } from "next-auth/react";
 
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { data: session, status } = useSession();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -15,6 +17,10 @@ export function Navbar() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const handleSignOut = () => {
+    signOut({ callbackUrl: "/" });
+  };
 
   return (
     <header
@@ -68,16 +74,27 @@ export function Navbar() {
 
         {/* Desktop Actions */}
         <div className="hidden md:flex items-center gap-4">
-          <Link href="/login" className="text-sm font-medium text-neutral-400 hover:text-white transition-colors duration-200">
-            Sign In
-          </Link>
-          <Link
-            href="/signup"
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-full bg-white text-neutral-950 hover:bg-neutral-200 transition-all duration-200 shadow-sm hover:shadow-indigo-500/10"
-          >
-            <span>Get Started</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
+          {status === "authenticated" ? (
+            <button
+              onClick={handleSignOut}
+              className="text-sm font-medium text-neutral-400 hover:text-white transition-colors duration-200"
+            >
+              Sign Out
+            </button>
+          ) : (
+            <>
+              <Link href="/login" className="text-sm font-medium text-neutral-400 hover:text-white transition-colors duration-200">
+                Sign In
+              </Link>
+              <Link
+                href="/signup"
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-full bg-white text-neutral-950 hover:bg-neutral-200 transition-all duration-200 shadow-sm hover:shadow-indigo-500/10"
+              >
+                <span>Get Started</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile menu button */}
@@ -122,21 +139,32 @@ export function Navbar() {
             </Link>
           </nav>
           <div className="pt-4 border-t border-neutral-800 flex flex-col gap-3">
-            <Link
-              href="/login"
-              className="w-full text-center py-2 text-sm font-medium text-neutral-300 hover:text-white"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Sign In
-            </Link>
-            <Link
-              href="/signup"
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-white text-neutral-950 font-medium text-sm hover:bg-neutral-200 transition-colors"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <span>Get Started</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
+            {status === "authenticated" ? (
+              <button
+                onClick={handleSignOut}
+                className="w-full text-center py-2 text-sm font-medium text-neutral-300 hover:text-white"
+              >
+                Sign Out
+              </button>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="w-full text-center py-2 text-sm font-medium text-neutral-300 hover:text-white"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/signup"
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-white text-neutral-950 font-medium text-sm hover:bg-neutral-200 transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <span>Get Started</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </>
+            )}
           </div>
         </div>
       )}

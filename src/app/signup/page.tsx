@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Layers } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -12,23 +13,37 @@ export default function SignUpPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState("");
+  const router = useRouter();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (loading || submitted) return; // Prevent rapid clicks
+    if (loading || submitted) return;
+
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    setError("");
+    try {
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Failed to create account");
+        return;
+      }
+
       setSubmitted(true);
-      // In production, redirect would happen here
-      // For demo, auto-reset after 5 seconds
-      setTimeout(() => {
-        setSubmitted(false);
-        setName("");
-        setEmail("");
-        setPassword("");
-      }, 5000);
-    }, 800);
+      setTimeout(() => router.push("/login"), 1500);
+    } catch (error) {
+      console.error("Signup error:", error);
+      setError("Failed to create account. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -48,6 +63,10 @@ export default function SignUpPage() {
             14 days free. No credit card required.
           </p>
         </div>
+
+        {error && (
+          <p role="alert" className="text-sm text-red-400 text-center">{error}</p>
+        )}
 
         {submitted ? (
           <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center space-y-2">

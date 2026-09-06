@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   CheckCircle,
   Circle,
@@ -23,7 +23,7 @@ interface Task {
   completed: boolean;
 }
 
-const initialTasks: Task[] = [
+const fallbackTasks: Task[] = [
   {
     id: "1",
     title: "Finalize Flow 2.0 Design System & Tokens",
@@ -72,32 +72,83 @@ const initialTasks: Task[] = [
 ];
 
 export function DashboardMockup() {
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const [tasks, setTasks] = useState<Task[]>(fallbackTasks);
   const [activeTab, setActiveTab] = useState<"all" | "today" | "upcoming">("today");
   const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const toggleTask = (id: string) => {
+  useEffect(() => {
+    fetch("/api/tasks")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.tasks && data.tasks.length > 0) {
+          setTasks(data.tasks);
+        }
+      })
+      .catch((err) => console.error("Failed to load tasks from API", err));
+  }, []);
+
+  const toggleTask = async (id: string) => {
+    const task = tasks.find((t) => t.id === id);
+    if (!task) return;
+
+    const newCompleted = !task.completed;
+
+    // Optimistic update
     setTasks((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t))
+      prev.map((t) => (t.id === id ? { ...t, completed: newCompleted } : t))
     );
+
+    try {
+      const response = await fetch("/api/tasks", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, completed: newCompleted }),
+      });
+      if (!response.ok) {
+        throw new Error("Failed to update task");
+      }
+    } catch (error) {
+      setTasks((prev) =>
+        prev.map((current) =>
+          current.id === id ? { ...current, completed: task.completed } : current
+        )
+      );
+      console.error("Failed to update task", error);
+    }
   };
 
-  const addTask = () => {
+  const addTask = async (e: React.FormEvent) => {
+    e.preventDefault();
     const title = newTaskTitle.trim();
-    if (!title) return;
-    setTasks((prev) => [
-      ...prev,
-      {
-        id: crypto.randomUUID(),
-        title,
-        category: "Product",
-        priority: "Medium",
-        duration: "25m",
-        timeframe: "today",
-        completed: false,
-      },
-    ]);
-    setNewTaskTitle("");
+    if (!title || loading) return;
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title,
+          category: "Product",
+          priority: "Medium",
+          duration: "25m",
+          timeframe: activeTab === "upcoming" ? "upcoming" : "today",
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to create task");
+      }
+      if (data.task) {
+        setTasks((prev) => [...prev, data.task]);
+        setNewTaskTitle("");
+      }
+    } catch (error) {
+      console.error("Failed to create task", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const visibleTasks = activeTab === "all" ? tasks : tasks.filter((task) => task.timeframe === activeTab);
@@ -269,10 +320,7 @@ export function DashboardMockup() {
                 {/* Quick Add Bar */}
                 <form
                   className="flex items-center gap-2 pt-2"
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    addTask();
-                  }}
+                  onSubmit={addTask}
                 >
                   <label htmlFor="new-task" className="sr-only">Create a task</label>
                   <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg bg-neutral-900/50 border border-dashed border-neutral-800 focus-within:border-indigo-500 transition-colors">
@@ -290,9 +338,9 @@ export function DashboardMockup() {
                   <button
                     type="submit"
                     className="px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-50"
-                    disabled={!newTaskTitle.trim()}
+                    disabled={!newTaskTitle.trim() || loading}
                   >
-                    Add
+                    {loading ? "Adding..." : "Add"}
                   </button>
                 </form>
               </div>

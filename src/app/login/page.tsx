@@ -2,6 +2,8 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { Layers } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -11,22 +13,36 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState("");
+  const router = useRouter();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (loading || submitted) return; // Prevent rapid clicks
+    if (loading || submitted) return;
+
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    setError("");
+    try {
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
+
+      if (!result || result.error) {
+        setError("Invalid email or password.");
+        return;
+      }
+
       setSubmitted(true);
-      // In production, redirect would happen here
-      // For demo, auto-reset after 5 seconds
-      setTimeout(() => {
-        setSubmitted(false);
-        setEmail("");
-        setPassword("");
-      }, 5000);
-    }, 800);
+      router.push("/demo");
+      router.refresh();
+    } catch (error) {
+      console.error("Login error:", error);
+      setError("Failed to sign in. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -46,6 +62,10 @@ export default function LoginPage() {
             Sign in to access your workspaces
           </p>
         </div>
+
+        {error && (
+          <p role="alert" className="text-sm text-red-400 text-center">{error}</p>
+        )}
 
         {submitted ? (
           <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center space-y-2">
