@@ -41,15 +41,28 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         message: "Account created successfully",
-        user: { id: user.id, name: user.name, email: user.email },
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+        },
       },
       { status: 201 }
     );
   } catch (error) {
+    console.error("[signup] account creation failed:", error);
+
     if (error instanceof z.ZodError) {
       const firstError = error.issues[0];
-      return NextResponse.json({ error: firstError?.message || "Validation error" }, { status: 400 });
+
+      return NextResponse.json(
+        {
+          error: firstError?.message || "Validation error",
+        },
+        { status: 400 }
+      );
     }
+
     return NextResponse.json(
       { error: "Failed to create account" },
       { status: 500 }
