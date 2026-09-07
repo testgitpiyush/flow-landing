@@ -75,12 +75,23 @@ export function Navbar() {
         {/* Desktop Actions */}
         <div className="hidden md:flex items-center gap-4">
           {status === "authenticated" ? (
-            <button
-              onClick={handleSignOut}
-              className="text-sm font-medium text-neutral-400 hover:text-white transition-colors duration-200"
-            >
-              Sign Out
-            </button>
+            <div className="flex items-center gap-4">
+              <Link
+                href="/demo"
+                className="text-sm font-medium text-neutral-400 hover:text-white transition-colors duration-200"
+              >
+                Dashboard
+              </Link>
+              <span className="text-xs text-neutral-400 font-medium bg-neutral-900 border border-neutral-800 px-2.5 py-1 rounded-full">
+                {session?.user?.name || session?.user?.email || "User"}
+              </span>
+              <button
+                onClick={handleSignOut}
+                className="text-sm font-medium text-neutral-400 hover:text-white transition-colors duration-200"
+              >
+                Sign Out
+              </button>
+            </div>
           ) : (
             <>
               <Link href="/login" className="text-sm font-medium text-neutral-400 hover:text-white transition-colors duration-200">
@@ -140,12 +151,24 @@ export function Navbar() {
           </nav>
           <div className="pt-4 border-t border-neutral-800 flex flex-col gap-3">
             {status === "authenticated" ? (
-              <button
-                onClick={handleSignOut}
-                className="w-full text-center py-2 text-sm font-medium text-neutral-300 hover:text-white"
-              >
-                Sign Out
-              </button>
+              <>
+                <div className="text-center text-xs text-neutral-400 font-medium py-1">
+                  Signed in as <span className="text-neutral-200">{session?.user?.name || session?.user?.email}</span>
+                </div>
+                <Link
+                  href="/demo"
+                  className="w-full text-center py-2 text-sm font-medium text-neutral-300 hover:text-white bg-neutral-900 border border-neutral-800 rounded-lg"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Dashboard
+                </Link>
+                <button
+                  onClick={handleSignOut}
+                  className="w-full text-center py-2 text-sm font-medium text-neutral-300 hover:text-white bg-neutral-900 border border-neutral-800 rounded-lg"
+                >
+                  Sign Out
+                </button>
+              </>
             ) : (
               <>
                 <Link

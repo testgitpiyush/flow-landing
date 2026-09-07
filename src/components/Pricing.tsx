@@ -30,7 +30,7 @@ export function Pricing() {
       priceYearly: 12,
       priceText: billingCycle === "yearly" ? "$12 / mo" : "$16 / mo",
       subtext: billingCycle === "yearly" ? "Billed annually ($144/yr)" : "Billed monthly",
-      cta: "Start 14-Day Free Trial",
+      cta: "Get Started",
       popular: true,
       features: [
         "Everything in Starter, plus:",

@@ -57,10 +57,10 @@ export default function SignUpPage() {
             <span className="font-semibold text-lg text-white">Flow</span>
           </Link>
           <h1 className="text-2xl font-bold tracking-tight text-white">
-            Start your free trial
+            Create your free account
           </h1>
           <p className="mt-2 text-sm text-neutral-400">
-            14 days free. No credit card required.
+            Free to use. No credit card required.
           </p>
         </div>
 

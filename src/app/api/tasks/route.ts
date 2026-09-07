@@ -11,16 +11,12 @@ const createTaskSchema = z.object({
   timeframe: z.enum(["today", "upcoming"]).default("today"),
 });
 
-const updateTaskSchema = z.object({
-  id: z.string().cuid(),
-  completed: z.boolean(),
-});
-
 async function getAuthenticatedUserId() {
   const session = await auth();
   return session?.user?.id ?? null;
 }
 
+// GET /api/tasks - list the authenticated user's own tasks.
 export async function GET() {
   try {
     const userId = await getAuthenticatedUserId();
@@ -40,6 +36,8 @@ export async function GET() {
   }
 }
 
+// POST /api/tasks - create a task owned by the authenticated user.
+// userId is always taken from the session, never trusted from the body.
 export async function POST(request: Request) {
   try {
     const userId = await getAuthenticatedUserId();
@@ -64,41 +62,5 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Failed to create task", error);
     return NextResponse.json({ error: "Failed to create task" }, { status: 500 });
-  }
-}
-
-export async function PATCH(request: Request) {
-  try {
-    const userId = await getAuthenticatedUserId();
-    if (!userId) {
-      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
-    }
-
-    const body = await request.json();
-    const parsed = updateTaskSchema.safeParse(body);
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0]?.message || "Invalid task update" },
-        { status: 400 }
-      );
-    }
-
-    const existingTask = await prisma.task.findFirst({
-      where: { id: parsed.data.id, userId },
-      select: { id: true },
-    });
-    if (!existingTask) {
-      return NextResponse.json({ error: "Task not found" }, { status: 404 });
-    }
-
-    const task = await prisma.task.update({
-      where: { id: parsed.data.id },
-      data: { completed: parsed.data.completed },
-    });
-
-    return NextResponse.json({ task });
-  } catch (error) {
-    console.error("Failed to update task", error);
-    return NextResponse.json({ error: "Failed to update task" }, { status: 500 });
   }
 }

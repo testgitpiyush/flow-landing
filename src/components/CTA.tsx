@@ -14,7 +14,7 @@ export function CTA() {
 
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-indigo-500/30 bg-indigo-500/10 text-indigo-300 text-xs font-medium mb-6">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Start your 14-day free trial</span>
+            <span>Free to get started — no credit card required</span>
           </div>
 
           <h2 className="text-3xl sm:text-5xl font-bold tracking-tight text-white max-w-2xl mx-auto leading-tight">

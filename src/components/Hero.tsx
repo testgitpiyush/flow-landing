@@ -46,14 +46,14 @@ export function Hero() {
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-base transition-all duration-200 shadow-lg shadow-indigo-600/25 hover:shadow-indigo-600/40 hover:-translate-y-0.5"
           >
             <Sparkles className="w-4 h-4" />
-            <span>Start Free Trial</span>
+            <span>Get Started Free</span>
             <ArrowRight className="w-4 h-4" />
           </Link>
           <Link
-            href="/demo"
+            href="#dashboard-preview"
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl border border-neutral-800 bg-neutral-900/50 hover:bg-neutral-800/60 text-neutral-300 hover:text-white font-medium text-base transition-all duration-200 backdrop-blur-sm"
           >
-            <span>Live Interactive Demo</span>
+            <span>See Interactive Preview</span>
           </Link>
         </div>
 
@@ -65,7 +65,7 @@ export function Hero() {
           </div>
           <div className="flex items-center gap-1.5">
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-            <span>14-day full feature trial</span>
+            <span>Free to get started</span>
           </div>
           <div className="flex items-center gap-1.5">
             <Zap className="w-4 h-4 text-indigo-400" />

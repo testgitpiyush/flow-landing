@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   CheckCircle,
   Circle,
@@ -23,7 +23,7 @@ interface Task {
   completed: boolean;
 }
 
-const fallbackTasks: Task[] = [
+const sampleTasks: Task[] = [
   {
     id: "1",
     title: "Finalize Flow 2.0 Design System & Tokens",
@@ -72,83 +72,36 @@ const fallbackTasks: Task[] = [
 ];
 
 export function DashboardMockup() {
-  const [tasks, setTasks] = useState<Task[]>(fallbackTasks);
+  // This component is a marketing showcase only - it always renders static
+  // sample data and never calls the real tasks API or represents any
+  // signed-in user's actual tasks. The real, database-backed dashboard is
+  // the <Dashboard /> component rendered at /demo for authenticated users.
+  const [tasks, setTasks] = useState<Task[]>(sampleTasks);
   const [activeTab, setActiveTab] = useState<"all" | "today" | "upcoming">("today");
   const [newTaskTitle, setNewTaskTitle] = useState("");
-  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    fetch("/api/tasks")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.tasks && data.tasks.length > 0) {
-          setTasks(data.tasks);
-        }
-      })
-      .catch((err) => console.error("Failed to load tasks from API", err));
-  }, []);
-
-  const toggleTask = async (id: string) => {
-    const task = tasks.find((t) => t.id === id);
-    if (!task) return;
-
-    const newCompleted = !task.completed;
-
-    // Optimistic update
-    setTasks((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, completed: newCompleted } : t))
-    );
-
-    try {
-      const response = await fetch("/api/tasks", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, completed: newCompleted }),
-      });
-      if (!response.ok) {
-        throw new Error("Failed to update task");
-      }
-    } catch (error) {
-      setTasks((prev) =>
-        prev.map((current) =>
-          current.id === id ? { ...current, completed: task.completed } : current
-        )
-      );
-      console.error("Failed to update task", error);
-    }
+  const toggleTask = (id: string) => {
+    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t)));
   };
 
-  const addTask = async (e: React.FormEvent) => {
+  const addTask = (e: React.FormEvent) => {
     e.preventDefault();
     const title = newTaskTitle.trim();
-    if (!title || loading) return;
+    if (!title) return;
 
-    setLoading(true);
-    try {
-      const res = await fetch("/api/tasks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title,
-          category: "Product",
-          priority: "Medium",
-          duration: "25m",
-          timeframe: activeTab === "upcoming" ? "upcoming" : "today",
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to create task");
-      }
-      if (data.task) {
-        setTasks((prev) => [...prev, data.task]);
-        setNewTaskTitle("");
-      }
-    } catch (error) {
-      console.error("Failed to create task", error);
-    } finally {
-      setLoading(false);
-    }
+    setTasks((prev) => [
+      ...prev,
+      {
+        id: `sample-${prev.length + 1}`,
+        title,
+        category: "Product",
+        priority: "Medium",
+        duration: "25m",
+        timeframe: activeTab === "upcoming" ? "upcoming" : "today",
+        completed: false,
+      },
+    ]);
+    setNewTaskTitle("");
   };
 
   const visibleTasks = activeTab === "all" ? tasks : tasks.filter((task) => task.timeframe === activeTab);
@@ -181,6 +134,9 @@ export function DashboardMockup() {
               </div>
 
               <div className="flex items-center gap-3">
+                <span className="hidden sm:inline-flex items-center px-2.5 py-1 rounded-full bg-neutral-800/80 text-neutral-400 border border-neutral-700/80 text-[10px] font-medium uppercase tracking-wider">
+                  Sample data
+                </span>
                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-xs font-medium">
                   <Flame className="w-3.5 h-3.5 text-indigo-400" />
                   <span>5 Day Streak</span>
@@ -338,9 +294,9 @@ export function DashboardMockup() {
                   <button
                     type="submit"
                     className="px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-50"
-                    disabled={!newTaskTitle.trim() || loading}
+                    disabled={!newTaskTitle.trim()}
                   >
-                    {loading ? "Adding..." : "Add"}
+                    Add
                   </button>
                 </form>
               </div>

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { notifyContactInquiry } from "@/lib/notify";
 import { z } from "zod";
 
 const inquirySchema = z.object({
@@ -22,13 +23,16 @@ export async function POST(request: Request) {
       },
     });
 
-    // In production, send email notification here
-    // Example: await sendEmail({ to: "support@flow.app", subject: "New Inquiry", body: message })
+    // Best-effort email notification. The inquiry is already persisted
+    // above, so a failed/unconfigured email provider never loses data -
+    // it's only logged.
+    const notification = await notifyContactInquiry({ name, email, message });
 
     return NextResponse.json(
       {
         message: "Thank you for your inquiry. We'll get back to you soon.",
         inquiryId: inquiry.id,
+        notified: notification.sent,
       },
       { status: 201 }
     );
