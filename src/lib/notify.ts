@@ -1,3 +1,5 @@
+import "server-only";
+
 const RESEND_API_URL = "https://api.resend.com/emails";
 
 interface ContactInquiry {

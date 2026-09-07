@@ -1,3 +1,4 @@
+import "server-only";
 import type { AIProvider, TaskSummary } from "./types";
 
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
