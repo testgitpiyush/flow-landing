@@ -11,7 +11,7 @@ const inquirySchema = z.object({
 });
 
 export async function POST(request: Request) {
-  const limit = checkRateLimit(request, { limit: 10, windowMs: 60_000 });
+  const limit = await checkRateLimit(request, { limit: 10, windowMs: 60_000 });
   if (!limit.success) {
     return NextResponse.json({ error: "Too many submissions. Try again later." }, { status: 429 });
   }

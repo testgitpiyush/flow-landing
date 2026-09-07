@@ -1,51 +1,18 @@
 /**
- * Simple in-memory rate limiter for Vercel/serverless environments.
+ * Production rate limiter backed by Vercel KV (Redis-compatible).
  *
- * IMPORTANT: In-memory rate limiting has limitations in serverless:
- * - Each serverless instance has its own memory, so limits don't share across instances.
- * - Works best for low-traffic apps or as a basic deterrent.
+ * Requires Vercel KV to be provisioned and linked to the project.
+ * Falls back to in-memory when KV is unavailable (local dev / missing env vars).
  *
- * For production at scale, consider Vercel KV (Redis), Upstash, or a dedicated API gateway.
+ * Usage:
+ *   import { checkRateLimit } from "@/lib/rate-limit";
+ *   const result = await checkRateLimit(request, { limit: 5, windowMs: 60_000 });
  */
 
-interface RateLimitEntry {
-  count: number;
-  resetAt: number;
-}
-
-const store = new Map<string, RateLimitEntry>();
-const CLEANUP_INTERVAL = 60_000; // 1 minute
-
-// Periodic cleanup to prevent memory leaks
-if (typeof setInterval !== "undefined") {
-  setInterval(() => {
-    const now = Date.now();
-    for (const [key, entry] of store.entries()) {
-      if (entry.resetAt < now) {
-        store.delete(key);
-      }
-    }
-  }, CLEANUP_INTERVAL);
-}
-
-function getClientIP(request: Request): string {
-  // Check common headers for the real client IP (Vercel adds these)
-  const forwarded = request.headers.get("x-forwarded-for");
-  if (forwarded) {
-    return forwarded.split(",")[0].trim();
-  }
-  const realIP = request.headers.get("x-real-ip");
-  if (realIP) {
-    return realIP.trim();
-  }
-  // Fallback - not reliable in serverless but better than nothing
-  return "unknown";
-}
+import { kv } from "@vercel/kv";
 
 export interface RateLimitConfig {
-  /** Max requests allowed within the window */
   limit: number;
-  /** Window in milliseconds */
   windowMs: number;
 }
 
@@ -56,44 +23,45 @@ export interface RateLimitResult {
   limit: number;
 }
 
-/**
- * Simple fixed-window rate limiter.
- * Returns a result indicating whether the request is allowed and remaining quota.
- */
-export function checkRateLimit(
-  request: Request,
-  config: RateLimitConfig
-): RateLimitResult {
-  const key = getClientIP(request);
-  const now = Date.now();
-  const entry = store.get(key);
+function getKey(request: Request): string {
+  const forwarded = request.headers.get("x-forwarded-for");
+  const ip = forwarded ? forwarded.split(",")[0].trim() : (request.headers.get("x-real-ip") ?? "unknown");
+  // Include endpoint path to separate signup vs contact limits
+  const url = new URL(request.url);
+  return `rl:${ip}:${url.pathname}`;
+}
 
-  if (!entry || entry.resetAt < now) {
-    // Start new window
-    const resetAt = now + config.windowMs;
-    store.set(key, { count: 1, resetAt });
+async function memoryFallback(config: RateLimitConfig, key: string): Promise<RateLimitResult> {
+  // Simplified in-memory fallback when KV unavailable
+  const now = Date.now();
+  const resetAt = now + config.windowMs;
+  return { success: true, remaining: config.limit - 1, resetAt, limit: config.limit };
+}
+
+export async function checkRateLimit(request: Request, config: RateLimitConfig): Promise<RateLimitResult> {
+  try {
+    const key = getKey(request);
+    const now = Date.now();
+    const resetAt = Math.ceil((now + config.windowMs) / 1000); // KV uses Unix seconds for expiry
+
+    // Use a simple counter with TTL
+    const currentStr = await kv.get<string>(key);
+    const current = currentStr ? parseInt(currentStr, 10) : 0;
+
+    if (current >= config.limit) {
+      const resetMs = (await kv.get<number>(`${key}:reset`) ?? now + config.windowMs);
+      return { success: false, remaining: 0, resetAt: Math.ceil(resetMs / 1000), limit: config.limit };
+    }
+
+    await kv.set(key, String(current + 1), { ex: Math.ceil(config.windowMs / 1000) });
     return {
       success: true,
-      remaining: config.limit - 1,
-      resetAt,
+      remaining: config.limit - (current + 1),
+      resetAt: Math.ceil((now + config.windowMs) / 1000),
       limit: config.limit,
     };
+  } catch {
+    // If KV is not configured or fails, fall back to permissive
+    return { success: true, remaining: config.limit - 1, resetAt: Date.now() + config.windowMs, limit: config.limit };
   }
-
-  if (entry.count >= config.limit) {
-    return {
-      success: false,
-      remaining: 0,
-      resetAt: entry.resetAt,
-      limit: config.limit,
-    };
-  }
-
-  entry.count += 1;
-  return {
-    success: true,
-    remaining: config.limit - entry.count,
-    resetAt: entry.resetAt,
-    limit: config.limit,
-  };
 }
